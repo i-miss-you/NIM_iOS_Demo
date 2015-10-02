@@ -131,7 +131,7 @@ enum RefreshType
     NSString *icon = [usr iconId] ? : @"DefaultAvatar.png";
     view.image = [UIImage imageNamed:icon];
     
-    view.userId = [usr usrId];
+    view.userId = [usr userId];
     [self addAvatarView:view];
 }
 

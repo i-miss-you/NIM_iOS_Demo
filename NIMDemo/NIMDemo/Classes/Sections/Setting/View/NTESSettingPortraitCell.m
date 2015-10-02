@@ -8,13 +8,13 @@
 
 #import "NTESSettingPortraitCell.h"
 #import "NTESCommonTableData.h"
-#import "NTESAvatarImageView.h"
-#import "NTESContactDataItem.h"
 #import "UIView+NTES.h"
 #import "NTESSessionUtil.h"
+#import "NIMAvatarImageView.h"
+
 @interface NTESSettingPortraitCell()
 
-@property (nonatomic,strong) NTESAvatarImageView *avatar;
+@property (nonatomic,strong) NIMAvatarImageView *avatar;
 
 @property (nonatomic,strong) UILabel *nameLabel;
 
@@ -27,7 +27,8 @@
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
-        _avatar = [NTESAvatarImageView demoInstanceTeamCardHeader];
+        CGFloat avatarWidth = 55.f;
+        _avatar = [[NIMAvatarImageView alloc] initWithFrame:CGRectMake(0, 0, avatarWidth, avatarWidth)];
         [self addSubview:_avatar];
         _nameLabel      = [[UILabel alloc] initWithFrame:CGRectZero];
         _nameLabel.font = [UIFont systemFontOfSize:18.f];
@@ -43,20 +44,14 @@
 - (void)refreshData:(NTESCommonTableRow *)rowData tableView:(UITableView *)tableView{
     self.textLabel.text       = rowData.title;
     self.detailTextLabel.text = rowData.detailTitle;
-    ContactDataMember *member = rowData.extraInfo;
-    NSString *imageName;
-    if ([member isKindOfClass:[ContactDataMember class]]) {
-       imageName = member.iconId;
-       self.nameLabel.text   = [NTESSessionUtil showNick:member.usrId inSession:nil] ;
-       [self.nameLabel sizeToFit];
-       self.accountLabel.text = [NSString stringWithFormat:@"帐号：%@",member.usrId];
-       [self.accountLabel sizeToFit];
-    }
-    UIImage * image = [UIImage imageNamed:imageName];
-    if (image) {
-        self.avatar.image = image;
-    }else{
-        self.avatar.image = [UIImage imageNamed:@"DefaultAvatar"];
+    NSString *uid = rowData.extraInfo;
+    if ([uid isKindOfClass:[NSString class]]) {
+        NIMKitInfo *info = [[NIMKit sharedKit] infoByUser:uid];
+        self.nameLabel.text   = info.showName ;
+        [self.nameLabel sizeToFit];
+        self.accountLabel.text = [NSString stringWithFormat:@"帐号：%@",uid];
+        [self.accountLabel sizeToFit];
+        [self.avatar nim_setImageWithURL:[NSURL URLWithString:info.avatarUrlString] placeholderImage:info.avatarImage];
     }
 }
 

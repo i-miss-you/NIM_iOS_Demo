@@ -12,8 +12,7 @@
 #import "NTESTimerHolder.h"
 #import "UIView+Toast.h"
 #import "UIActionSheet+NTESBlock.h"
-#import "NTESAvatarImageView.h"
-#import "NTESContactsManager.h"
+#import "NIMAvatarImageView.h"
 #import "NTESWhiteboardAttachment.h"
 #import "NTESSessionMsgConverter.h"
 #import "NIMRTSRecordingInfo.h"
@@ -47,7 +46,7 @@ static const NSTimeInterval SendCmdIntervalSeconds = 0.06;
 @property (weak, nonatomic) IBOutlet UIButton *clearButton;
 
 @property (weak, nonatomic) IBOutlet UILabel *hintTextLabel;
-@property (weak, nonatomic) IBOutlet NTESAvatarImageView *avatarImageView;
+@property (weak, nonatomic) IBOutlet NIMAvatarImageView *avatarImageView;
 @property (weak, nonatomic) IBOutlet UILabel *nameTextLabel;
 @property (weak, nonatomic) IBOutlet UIButton *closeButton;
 @property (weak, nonatomic) IBOutlet UILabel *closeLabel;
@@ -105,10 +104,15 @@ static const NSTimeInterval SendCmdIntervalSeconds = 0.06;
     id<NIMRTSManager> manager = [NIMSDK sharedSDK].rtsManager;
     [manager addDelegate:self];
     [self updateButton];
-    ContactDataMember *contact = [[NTESContactsManager sharedInstance] localContactByUsrId:_peerID];
-    NSString *avatar = [contact iconId] ? : @"DefaultAvatar";
-    _avatarImageView.image = [UIImage imageNamed:avatar];
-    [_nameTextLabel setText:[contact nick]];
+    
+    NIMKitInfo *info = [[NIMKit sharedKit] infoByUser:_peerID];
+    NSURL *avatarURL;
+    if (info.avatarUrlString.length) {
+        avatarURL = [NSURL URLWithString:info.avatarUrlString];
+    }
+    [_avatarImageView nim_setImageWithURL:avatarURL placeholderImage:info.avatarImage];
+    
+    [_nameTextLabel setText:[info showName]];
     
     self.view.backgroundColor = UIColorFromRGB(0xE9ECF0);
     

@@ -10,7 +10,6 @@
 #import "NTESSearchMessageEntraceCell.h"
 #import "NTESSearchMessageContentCell.h"
 #import "NTESSearchLocalHistoryObject.h"
-#import "NTESContactsManager.h"
 #import "NTESBundleSetting.h"
 #import "UIView+NTES.h"
 
@@ -149,7 +148,7 @@
         [self.data removeAllObjects];
         NIMMessageSearchOption *option = [[NIMMessageSearchOption alloc] init];
         option.searchContent = self.keyWord;
-        NSArray *uids = [[NTESContactsManager sharedInstance] searchUsersByKeyword:self.keyWord users:self.members];
+        NSArray *uids = [self searchUsersByKeyword:self.keyWord users:self.members];
         option.fromIds       = uids;
         option.limit         = SearchLimit;
         option.order         = [NTESBundleSetting sharedConfig].localSearchOrderByTimeDesc? NIMMessageSearchOrderDesc: NIMMessageSearchOrderAsc;
@@ -239,6 +238,23 @@
     [btn addSubview:sep];
     return btn;
 }
+
+
+- (NSArray *)searchUsersByKeyword:(NSString *)keyword users:(NSArray *)users{
+    NSMutableArray *data = [[NSMutableArray alloc] init];
+    for (NSString *uid in users) {
+        NIMKitInfo *info = [[NIMKit sharedKit] infoByUser:uid];
+        [data addObject:info];
+    }
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"SELF.showName CONTAINS[cd] %@",keyword];
+    NSArray *array = [data filteredArrayUsingPredicate:predicate];
+    NSMutableArray *output = [[NSMutableArray alloc] init];
+    for (NIMKitInfo *info in array) {
+        [output addObject:info.infoId];
+    }
+    return output;
+}
+
 
 
 @end

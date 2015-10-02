@@ -11,7 +11,6 @@
 #import "NIMSDK.h"
 #import "UIView+Toast.h"
 #import "NTESService.h"
-#import "NTESContactsManager.h"
 #import "NTESNotificationCenter.h"
 #import "NTESLogManager.h"
 #import "NTESDemoConfig.h"
@@ -33,6 +32,11 @@ NSString *NTESNotificationLogout = @"NTESNotificationLogout";
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    
+    //配置 SDK 配置，需要在 SDK 启动之前进行配置 (如文件存储根目录等)
+    //NSString *sdkPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    //[[NIMSDKConfig sharedConfig] setupSDKDir:sdkPath];
+    
     
     //appkey是应用的标识，不同应用之间的数据（用户、消息、群组等）是完全隔离的。
     //如需打网易云信Demo包，请勿修改appkey，开发自己的应用时，请替换为自己的appkey.
@@ -202,28 +206,6 @@ NSString *NTESNotificationLogout = @"NTESNotificationLogout";
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"下线通知" message:reason delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil, nil];
         [alert show];
     }];
-}
-
-- (void)onLogin:(NIMLoginStep)step
-{
-    if (step == NIMLoginStepSyncOK)
-    {
-        NTESAppToken *token = [[NTESAppTokenManager sharedManager] appToken];
-        if (token)
-        {
-            DDLogDebug(@"token exist:\n access_token->%@ \n sdk_token->%@ \n",token.accessToken,token.sdkToken);
-            [[NTESContactsManager sharedInstance] update];
-        }
-        else
-        {
-            [[NTESAppTokenManager sharedManager] fetchToken:^(NTESAppToken *token) {
-                if (token)
-                {
-                    [[NTESContactsManager sharedInstance] update];
-                }
-            }];
-        }
-    }
 }
 
 - (void)onAutoLoginFailed:(NSError *)error

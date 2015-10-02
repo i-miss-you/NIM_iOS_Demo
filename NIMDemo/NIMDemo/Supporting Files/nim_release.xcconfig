@@ -1,0 +1,12 @@
+//
+//  nim_adhoc.xcconfig
+//  NIM
+//
+//  Created by amao on 9/22/15.
+//  Copyright © 2015 Netease. All rights reserved.
+//
+
+XCCONFIG_BUNDLE_ID                  = com.netease.NIM.demo
+XCCONFIG_BUNDLE_NAME                = 网易云信
+XCCONFIG_CODE_SIGNING               = iPhone Distribution: Cooperation Communication Operating and Support Center China Telecom
+XCCONFIG_PROVISIONING_PROFILE       = 1a895aab-42c9-4e6f-89ed-a5e1a4685d5a

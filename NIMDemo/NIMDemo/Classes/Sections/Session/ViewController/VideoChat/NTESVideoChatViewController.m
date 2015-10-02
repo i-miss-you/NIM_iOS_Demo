@@ -14,6 +14,9 @@
 #import "NetCallChatInfo.h"
 #import "NTESSessionUtil.h"
 #import "NTESVideoChatNetStatusView.h"
+#import "NTESGLView.h"
+
+#define NTESUseGLView
 
 @interface NTESVideoChatViewController ()
 
@@ -22,6 +25,10 @@
 @property (nonatomic,strong) CALayer *localVideoLayer;
 
 @property (nonatomic,assign) BOOL oppositeCloseVideo;
+
+#if defined (NTESUseGLView)
+@property (nonatomic, strong) NTESGLView *remoteGLView;
+#endif
 
 @end
 
@@ -59,7 +66,20 @@
     if (self.localVideoLayer) {
         [self.localView.layer addSublayer:self.localVideoLayer];
     }
+    [self initRemoteGLView];
 }
+
+- (void)initRemoteGLView
+{
+#if defined (NTESUseGLView)
+    _remoteGLView = [[NTESGLView alloc] initWithFrame:_remoteView.bounds];
+    [_remoteGLView setContentMode:UIViewContentModeScaleAspectFit];
+    [_remoteGLView setBackgroundColor:[UIColor clearColor]];
+    _remoteGLView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [_remoteView addSubview:_remoteGLView];
+#endif
+}
+
 
 #pragma mark - Call Life
 - (void)startByCaller{
@@ -212,6 +232,17 @@
     [self.localView.layer addSublayer:layer];
 }
 
+#if defined(NTESUseGLView)
+- (void)onRemoteYUVReady:(NSData *)yuvData
+                   width:(NSUInteger)width
+                  height:(NSUInteger)height
+{
+    if (([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive) && !self.oppositeCloseVideo) {
+        
+        [_remoteGLView render:yuvData width:width height:height];
+    }
+}
+#else
 - (void)onRemoteImageReady:(CGImageRef)image{
     if (self.oppositeCloseVideo) {
         return;
@@ -219,6 +250,7 @@
     self.remoteView.contentMode = UIViewContentModeScaleAspectFill;
     self.remoteView.image = [UIImage imageWithCGImage:image];
 }
+#endif
 
 - (void)onHangup:(UInt64)callID
               by:(NSString *)user{
@@ -293,6 +325,10 @@
 }
 
 - (void)resetRemoteImage{
+#if defined (NTESUseGLView)
+    [self.remoteGLView render:nil width:0 height:0];
+#endif
+
     self.remoteView.image = [UIImage imageNamed:@"netcall_bkg.jpg"];
 }
 

@@ -7,7 +7,6 @@
 //
 
 #import "NTESTeamListViewController.h"
-#import "NTESCreateNormalTeamCardViewController.h"
 #import "NTESSessionViewController.h"
 #import "NIMSDK.h"
 

@@ -13,7 +13,6 @@
 #import "NTESMainTabController.h"
 #import "UIView+Toast.h"
 #import "SVProgressHUD.h"
-#import "NTESContactsManager.h"
 #import "NTESService.h"
 #import "UIView+NTES.h"
 #import "NSString+NTES.h"
@@ -23,7 +22,6 @@
 #import "NTESAppTokenManager.h"
 #import "UIActionSheet+NTESBlock.h"
 #import "NTESLogManager.h"
-#import "M80AttributedLabel.h"
 #import "NTESRegisterViewController.h"
 
 @interface NTESLoginViewController ()

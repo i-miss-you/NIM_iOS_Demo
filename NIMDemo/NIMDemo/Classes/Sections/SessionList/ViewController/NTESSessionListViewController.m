@@ -17,6 +17,7 @@
 #import "NTESChartletAttachment.h"
 #import "NTESWhiteboardAttachment.h"
 #import "NTESSessionUtil.h"
+#import "NTESPersonalCardViewController.h"
 
 #define SessionListTitle @"网易云信"
 
@@ -67,6 +68,14 @@
 - (void)onSelectedRecent:(NIMRecentSession *)recent atIndexPath:(NSIndexPath *)indexPath{
     NTESSessionViewController *vc = [[NTESSessionViewController alloc] initWithSession:recent.session];
     [self.navigationController pushViewController:vc animated:YES];
+}
+
+- (void)onSelectedAvatar:(NIMRecentSession *)recent
+             atIndexPath:(NSIndexPath *)indexPath{
+    if (recent.session.sessionType == NIMSessionTypeP2P) {
+       NTESPersonalCardViewController *vc = [[NTESPersonalCardViewController alloc] initWithUserId:recent.session.sessionId];
+      [self.navigationController pushViewController:vc animated:YES];
+    }
 }
 
 - (void)onDeleteRecentAtIndexPath:(NIMRecentSession *)recent atIndexPath:(NSIndexPath *)indexPath{

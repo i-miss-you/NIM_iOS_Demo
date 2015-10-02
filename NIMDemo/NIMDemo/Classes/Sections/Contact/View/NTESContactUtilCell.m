@@ -32,7 +32,7 @@
 - (void)refreshWithContactItem:(id<NTESContactItem>)item{
     self.data = item;
     self.textLabel.text = item.nick;
-    self.imageView.image = [UIImage imageNamed:item.iconId];
+    self.imageView.image = item.icon;
     self.imageView.userInteractionEnabled = YES;
     UITapGestureRecognizer *recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onPressUtilImage:)];
     [self.imageView addGestureRecognizer: recognizer];

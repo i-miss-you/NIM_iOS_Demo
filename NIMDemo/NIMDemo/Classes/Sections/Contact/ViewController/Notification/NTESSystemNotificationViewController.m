@@ -25,7 +25,7 @@ static NSString *reuseIdentifier = @"reuseIdentifier";
 {
     if (_shouldMarkAsRead)
     {
-        [[[NIMSDK sharedSDK] systemNotificationManager] markAllNotificationAsRead];
+        [[[NIMSDK sharedSDK] systemNotificationManager] markAllNotificationsAsRead];
     }
 }
 

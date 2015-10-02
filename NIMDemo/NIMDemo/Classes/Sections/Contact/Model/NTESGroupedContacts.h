@@ -8,21 +8,8 @@
 
 #import "NTESGroupedDataCollection.h"
 
-@protocol NTESGroupedContactsDelegate <NSObject>
-
-- (void)didFinishedContactsUpdate;
-
-@end
-
 @class NTESContactsManager;
 
 @interface NTESGroupedContacts : NTESGroupedDataCollection
-
-@property (nonatomic, weak) id<NTESGroupedContactsDelegate> delegate;
-@property (nonatomic, strong) NTESContactsManager *dataSource;
-
-- (instancetype)initWithContacts:(NSArray *)contacts;
-
-- (void)update;
 
 @end

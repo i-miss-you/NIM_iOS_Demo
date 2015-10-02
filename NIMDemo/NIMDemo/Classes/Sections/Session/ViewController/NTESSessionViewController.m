@@ -33,15 +33,16 @@
 #import "NTESFilePreViewController.h"
 #import "NTESAudio2TextViewController.h"
 #import "NSDictionary+NTESJson.h"
-#import "NTESCreateNormalTeamCardViewController.h"
+#import "NIMAdvancedTeamCardViewController.h"
 #import "NTESSessionRemoteHistoryViewController.h"
-#import "NTESNormalTeamCardViewController.h"
-#import "NTESRegularTeamCardViewController.h"
+#import "NIMNormalTeamCardViewController.h"
 #import "UIView+NTES.h"
 #import "NTESBundleSetting.h"
-#import "NTESContactsManager.h"
-#import "NTESPersonCardViewController.h"
+#import "NTESPersonalCardViewController.h"
 #import "NTESSessionSnapchatContentView.h"
+#import "NTESSessionLocalHistoryViewController.h"
+#import "NIMContactSelectViewController.h"
+#import "SVProgressHUD.h"
 
 typedef enum : NSUInteger {
     NTESImagePickerModeImage,
@@ -54,7 +55,9 @@ UINavigationControllerDelegate,
 NTESLocationViewControllerDelegate,
 NIMSystemNotificationManagerDelegate,
 NIMMediaManagerDelgate,
-NTESTimerHolderDelegate>
+NTESTimerHolderDelegate,
+NIMContactSelectDelegate>
+
 @property (nonatomic,strong)    NTESCustomSysNotificationSender *notificaionSender;
 @property (nonatomic,strong)    NTESSessionConfig       *sessionConfig;
 @property (nonatomic,strong)    UIImagePickerController *imagePicker;
@@ -471,7 +474,7 @@ NTESTimerHolderDelegate>
 
 
 - (void)onTapAvatar:(NSString *)userId{
-    NTESPersonCardViewController *vc = [[NTESPersonCardViewController alloc] initWithUserId:userId];
+    NTESPersonalCardViewController *vc = [[NTESPersonalCardViewController alloc] initWithUserId:userId];
     [self.navigationController pushViewController:vc animated:YES];
 }
 
@@ -558,27 +561,57 @@ NTESTimerHolderDelegate>
 
 #pragma mark - 导航按钮
 - (void)onTouchUpInfoBtn:(id)sender{
-    NTESCreateNormalTeamCardViewController *vc = [[NTESCreateNormalTeamCardViewController alloc] initWithUser:self.session.sessionId];
-    [self.navigationController pushViewController:vc animated:YES];
+    NSMutableArray *users = [[NSMutableArray alloc] init];
+    NSString *currentUserID = [[[NIMSDK sharedSDK] loginManager] currentAccount];
+    [users addObject:currentUserID];
+    NIMContactFriendSelectConfig *config = [[NIMContactFriendSelectConfig alloc] init];
+    config.filterIds = users;
+    config.needMutiSelected = YES;
+    config.alreadySelectedMemberId = @[self.session.sessionId];
+    NIMContactSelectViewController *vc = [[NIMContactSelectViewController alloc] initWithConfig:config];
+    vc.delegate = self;
+    [vc show];
 }
 
 - (void)enterHistory:(id)sender{
-    NTESSessionRemoteHistoryViewController *vc = [[NTESSessionRemoteHistoryViewController alloc] initWithSession:self.session];
-    [self.navigationController pushViewController:vc animated:YES];
+    [self.view endEditing:YES];
+    UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:@"选择操作" delegate:nil cancelButtonTitle:@"取消" destructiveButtonTitle:nil otherButtonTitles:@"搜索本地消息",@"查看云端消息",@"清空聊天记录", nil];
+    [sheet showInView:self.view completionHandler:^(NSInteger index) {
+        switch (index) {
+            case 0:{ //搜索本地消息
+                    NTESSessionLocalHistoryViewController *vc = [[NTESSessionLocalHistoryViewController alloc] initWithSession:self.session];
+                    [self.navigationController pushViewController:vc animated:YES];
+                break;
+            }
+            case 1:{ //查看云端消息
+                NTESSessionRemoteHistoryViewController *vc = [[NTESSessionRemoteHistoryViewController alloc] initWithSession:self.session];
+                [self.navigationController pushViewController:vc animated:YES];
+                break;
+            }
+            case 2:{ //清空聊天记录
+                UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:@"确定清空聊天记录？" delegate:nil cancelButtonTitle:@"取消" destructiveButtonTitle:@"确定" otherButtonTitles:nil, nil];
+                __weak UIActionSheet *wSheet;
+                [sheet showInView:self.view completionHandler:^(NSInteger index) {
+                    if (index == wSheet.destructiveButtonIndex) {
+                        BOOL removeRecentSession = [NTESBundleSetting sharedConfig].removeSessionWheDeleteMessages;
+                        [[NIMSDK sharedSDK].conversationManager deleteAllmessagesInSession:self.session removeRecentSession:removeRecentSession];
+                    }
+                }];
+                break;
+            }
+            default:
+                break;
+        }
+    }];
 }
 
 - (void)enterTeamCard:(id)sender{
     NIMTeam *team = [[NIMSDK sharedSDK].teamManager teamById:self.session.sessionId];
     UIViewController *vc;
-    switch (team.type) {
-        case NIMTeamTypeNormal:
-            vc = [[NTESNormalTeamCardViewController alloc] initWithTeam:team];
-            break;
-        case NIMTeamTypeAdvanced:
-            vc = [[NTESRegularTeamCardViewController alloc] initWithTeam:team];
-            break;
-        default:
-            break;
+    if (team.type == NIMTeamTypeNormal) {
+        vc = [[NIMNormalTeamCardViewController alloc] initWithTeam:team];
+    }else if(team.type == NIMTeamTypeAdvanced){
+        vc = [[NIMAdvancedTeamCardViewController alloc] initWithTeam:team];
     }
     [self.navigationController pushViewController:vc animated:YES];
 }
@@ -613,6 +646,34 @@ NTESTimerHolderDelegate>
                      completion:nil];
 }
 
+#pragma mark - ContactSelectDelegate
+
+- (void)didFinishedSelect:(NSArray *)selectedContacts{
+    if (!selectedContacts.count) {
+        return;
+    }
+    NSString *uid = [[NIMSDK sharedSDK].loginManager currentAccount];
+    NSArray *users = [@[uid] arrayByAddingObjectsFromArray:selectedContacts];
+    NIMCreateTeamOption *option = [[NIMCreateTeamOption alloc] init];
+    option.name = @"普通群";
+    option.type = NIMTeamTypeNormal;
+    __weak typeof(self) wself = self;
+    [SVProgressHUD show];
+    [[NIMSDK sharedSDK].teamManager createTeam:option
+                                         users:users
+                                    completion:^(NSError *error, NSString *teamId) {
+                                        [SVProgressHUD dismiss];
+                                        if (!error) {
+                                            NIMSession *session = [NIMSession session:teamId type:NIMSessionTypeTeam];
+                                            UINavigationController *nav = wself.navigationController;
+                                            [nav popToRootViewControllerAnimated:NO];
+                                            NTESSessionViewController *vc = [[NTESSessionViewController alloc] initWithSession:session];
+                                            [nav pushViewController:vc animated:YES];
+                                        }else{
+                                            [wself.view makeToast:@"创建群组失败" duration:2.0 position:CSToastPositionCenter];
+                                        }
+                                    }];
+}
 
 
 #pragma mark - 辅助方法
@@ -698,7 +759,6 @@ NTESTimerHolderDelegate>
     }else if(self.session.sessionType == NIMSessionTypeP2P){
         self.navigationItem.rightBarButtonItems = @[enterUInfoItem,historyButtonItem];
     }
-    
 }
 
 

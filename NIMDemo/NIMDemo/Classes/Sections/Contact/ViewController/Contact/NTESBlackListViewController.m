@@ -7,15 +7,15 @@
 //
 
 #import "NTESBlackListViewController.h"
-#import "NTESContactsManager.h"
 #import "NTESUserListCell.h"
 #import "UIView+Toast.h"
-#import "NTESContactSelectViewController.h"
+#import "NIMContactSelectViewController.h"
 #import "NTESListHeader.h"
 #import "UIView+NTES.h"
-#import "NTESPersonCardViewController.h"
+#import "NTESPersonalCardViewController.h"
+#import "NTESContactDataMember.h"
 
-@interface NTESBlackListViewController ()<UITableViewDataSource,UITableViewDelegate,NTESContactSelectDelegate,NTESListHeaderDelegate,NTESUserListCellDelegate>
+@interface NTESBlackListViewController ()<UITableViewDataSource,UITableViewDelegate,NIMContactSelectDelegate,NTESListHeaderDelegate,NTESUserListCellDelegate>
 
 @property (nonatomic,strong) NSMutableArray *data;
 
@@ -28,7 +28,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self setUpNavItem];
-    self.data = [[NTESContactsManager sharedInstance].myBlackList mutableCopy];
+    self.data = self.myBlackListUser;
     self.tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
     [self.view addSubview:self.tableView];
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
@@ -94,9 +94,9 @@
     if (editingStyle == UITableViewCellEditingStyleDelete && indexPath) {
         NSInteger index = indexPath.row;
         if (self.data.count > index) {
-            ContactDataMember *member = self.data[indexPath.row];
+            NTESContactDataMember *member = self.data[indexPath.row];
             __weak typeof(self) wself = self;
-            [[NIMSDK sharedSDK].userManager removeFromBlackBlackList:member.memberId completion:^(NSError *error) {
+            [[NIMSDK sharedSDK].userManager removeFromBlackBlackList:member.info.infoId completion:^(NSError *error) {
                 if (!error) {
                     [wself.data removeObjectAtIndex:indexPath.row];
                     [wself.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
@@ -110,14 +110,15 @@
 
 
 - (void)onOpera:(id)sender{
-    NSMutableArray *users = [[[NTESContactsManager sharedInstance] allMyFriendsIds] mutableCopy];
-    for (ContactDataMember *member in self.data) {
-        [users removeObject:member.usrId];
+    NSMutableArray *users = [[NSMutableArray alloc] init];
+    for (NTESContactDataMember *member in self.data) {
+        [users addObject:member.info.infoId];
     }
-    NTESContactSelectViewController *vc = [[NTESContactSelectViewController alloc] initContactSeleorWithMembers:users];
-    vc.maxSelectCount = 1;
+    NIMContactFriendSelectConfig *config = [[NIMContactFriendSelectConfig alloc] init];
+    config.filterIds = users;
+    NIMContactSelectViewController *vc = [[NIMContactSelectViewController alloc] initWithConfig:config];
     vc.delegate = self;
-    [self presentViewController:[[UINavigationController alloc] initWithRootViewController:vc] animated:YES completion:nil];
+    [vc show];
 }
 
 
@@ -128,7 +129,7 @@
         [[NIMSDK sharedSDK].userManager addToBlackList:selectedContacts.firstObject completion:^(NSError *error) {
             if (!error) {
                 [wself.view makeToast:@"操作成功！" duration:2.0 position:CSToastPositionCenter];
-                wself.data = [[NTESContactsManager sharedInstance].myBlackList mutableCopy];
+                wself.data = wself.myBlackListUser;
                 [wself.tableView reloadData];
             }else{
                 [wself.view makeToast:@"操作失败！" duration:2.0 position:CSToastPositionCenter];
@@ -139,8 +140,21 @@
 
 #pragma mark - NTESUserListCellDelegate
 - (void)didTouchUserListAvatar:(NSString *)userId{
-    NTESPersonCardViewController *vc = [[NTESPersonCardViewController alloc] initWithUserId:userId];
+    NTESPersonalCardViewController *vc = [[NTESPersonalCardViewController alloc] initWithUserId:userId];
     [self.navigationController pushViewController:vc animated:YES];
+}
+
+
+#pragma mark - Private
+- (NSMutableArray *)myBlackListUser{
+    NSMutableArray *list = [[NSMutableArray alloc] init];
+    for (NIMUser *user in [NIMSDK sharedSDK].userManager.myBlackList) {
+        NTESContactDataMember *member = [[NTESContactDataMember alloc] init];
+        NIMKitInfo *info = [[NIMKit sharedKit] infoByUser:user.userId];
+        member.info = info;
+        [list addObject:member];
+    }
+    return list;
 }
 
 @end

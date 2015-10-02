@@ -7,7 +7,6 @@
 //
 
 #import "NTESNotificationCenter.h"
-#import "NTESUsrInfoData.h"
 #import "NTESVideoChatViewController.h"
 #import "NTESAudioChatViewController.h"
 #import "NTESMainTabController.h"
@@ -57,11 +56,6 @@ NSString *NTESCustomNotificationCountChanged = @"NTESCustomNotificationCountChan
     [[NIMSDK sharedSDK].systemNotificationManager removeDelegate:self];
     [[NIMSDK sharedSDK].netCallManager removeDelegate:self];
     [[NIMSDK sharedSDK].rtsManager removeDelegate:self];
-}
-
-#pragma mark - NIMSystemNotificationManagerDelegate
-- (void)onReceiveSystemNotification:(NIMSystemNotification *)notification {
-    [[NTESUsrInfoData sharedInstance] queryUsrInfoById:notification.sourceID needRemoteFetch:YES fetchCompleteHandler:nil];
 }
 
 - (void)onReceiveCustomSystemNotification:(NIMCustomSystemNotification *)notification{

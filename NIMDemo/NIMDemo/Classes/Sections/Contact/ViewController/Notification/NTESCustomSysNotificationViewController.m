@@ -7,7 +7,7 @@
 //
 
 #import "NTESCustomSysNotificationViewController.h"
-#import "NTESContactSelectViewController.h"
+#import "NIMContactSelectViewController.h"
 #import "NTESCustomSysNotificationSender.h"
 #import "UIAlertView+NTESBlock.h"
 #import "NTESCustomNotificationDB.h"
@@ -20,7 +20,7 @@
 #define FetchLimit 10
 static NSString *reuseIdentifier = @"reuseIdentifier";
 
-@interface NTESCustomSysNotificationViewController ()<NTESContactSelectDelegate>
+@interface NTESCustomSysNotificationViewController ()<NIMContactSelectDelegate>
 
 @property (nonatomic,strong) NSMutableArray *data;
 
@@ -39,7 +39,7 @@ static NSString *reuseIdentifier = @"reuseIdentifier";
     self.data = [[db fetchNotifications:nil limit:FetchLimit] mutableCopy];
     self.tableView.tableFooterView = [[UIView alloc] init];
     
-    [db markAllNotificationAsRead];
+    [db markAllNotificationsAsRead];
     extern NSString *NTESCustomNotificationCountChanged;
     [[NSNotificationCenter defaultCenter] postNotificationName:NTESCustomNotificationCountChanged object:nil];
     
@@ -113,19 +113,18 @@ static NSString *reuseIdentifier = @"reuseIdentifier";
 - (void)addCustomNotification:(id)sender{
     
     UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:@"取消" destructiveButtonTitle:nil otherButtonTitles:@"单聊",@"群组", nil];
-    __block NTESContactSelectViewController *vc;
+    __block NIMContactSelectViewController *vc;
     [sheet showInView:self.view completionHandler:^(NSInteger index) {
         switch (index) {
             case 0:{
-                vc = [[NTESContactSelectViewController alloc] initCommonContactSelector];
-                vc.maxSelectCount = 1;
-                self.sendSessionType = NIMSessionTypeP2P;
+                NIMContactFriendSelectConfig *config = [[NIMContactFriendSelectConfig alloc] init];
+                vc = [[NIMContactSelectViewController alloc] initWithConfig:config];
                 vc.delegate = self;
                 break;
             }
             case 1:{
-                vc = [[NTESContactSelectViewController alloc] initTeamSelector];
-                vc.maxSelectCount = 1;
+                NIMContactTeamSelectConfig *config = [[NIMContactTeamSelectConfig alloc] init];
+                vc = [[NIMContactSelectViewController alloc] initWithConfig:config];
                 self.sendSessionType = NIMSessionTypeTeam;
                 vc.delegate = self;
                 break;
@@ -133,9 +132,8 @@ static NSString *reuseIdentifier = @"reuseIdentifier";
             default:
                 return;
         }
-        [self presentViewController:[[UINavigationController alloc] initWithRootViewController:vc] animated:YES completion:nil];
+        [vc show];
     }];
-    
 }
 
 - (void)clearAll:(id)sender{
@@ -145,7 +143,7 @@ static NSString *reuseIdentifier = @"reuseIdentifier";
     [self.tableView reloadData];
 }
 
-#pragma mark - ContactSelectDelegate
+#pragma mark - NIMContactSelectDelegate
 - (void)didFinishedSelect:(NSArray *)selectedContacts{
     NSString *selectId = selectedContacts.firstObject;
     if (!selectId.length) {

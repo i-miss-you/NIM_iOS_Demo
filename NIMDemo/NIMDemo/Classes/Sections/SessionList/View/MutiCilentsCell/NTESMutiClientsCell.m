@@ -8,6 +8,7 @@
 
 #import "NTESMutiClientsCell.h"
 #import "NTESClientUtil.h"
+#import "UIView+NTES.h"
 
 @implementation NTESMutiClientsCell
 
@@ -19,7 +20,6 @@
 
 - (void)refreshWidthCilent:(NIMLoginClient *)client{
     self.textLabel.text = [self nameWithClient:client];
-    [self.textLabel sizeToFit];
 }
 
 
@@ -33,5 +33,9 @@
     return name.length? [NSString stringWithFormat:@"正在使用云信%@版",name] : @"正在使用云信未知版本";
 }
 
-
+- (void)layoutSubviews{
+    [super layoutSubviews];
+    [self.textLabel sizeToFit];
+    self.textLabel.centerY = self.height * .5f;
+}
 @end

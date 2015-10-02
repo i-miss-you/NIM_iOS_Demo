@@ -22,10 +22,12 @@
 
 @property (nonatomic,copy) NSString *badge;
 
-@property (nonatomic,copy) NSString *iconId;
+@property (nonatomic,copy) UIImage *icon;
 
 @property (nonatomic,copy) NSString *vcName;
 
-@property (nonatomic,copy) NSString *usrId;
+@property (nonatomic,copy) NSString *userId;
+
+@property (nonatomic,copy) NSString *selName;
 
 @end

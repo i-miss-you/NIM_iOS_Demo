@@ -7,25 +7,25 @@
 //
 
 #import "NTESSystemNotificationCell.h"
-#import "NTESContactsManager.h"
 #import "NTESSessionUtil.h"
 #import "UIView+NTES.h"
 #import "NIMSDK.h"
-#import "NTESAvatarImageView.h"
+#import "NIMAvatarImageView.h"
 
 @interface NTESSystemNotificationCell ()
 @property (nonatomic,strong) IBOutlet UILabel *messageLabel;
 @property (nonatomic,strong) NIMSystemNotification *notification;
-@property (nonatomic,strong) IBOutlet NTESAvatarImageView *avatarImageView;
+@property (nonatomic,strong) IBOutlet NIMAvatarImageView *avatarImageView;
 @end
 
 @implementation NTESSystemNotificationCell
 
 - (void)awakeFromNib{
     [super awakeFromNib];
+    self.textLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
     self.detailTextLabel.backgroundColor = [UIColor clearColor];
     self.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
-    self.avatarImageView = [NTESAvatarImageView demoInstanceUserList];
+    self.avatarImageView = [[NIMAvatarImageView alloc] initWithFrame:CGRectMake(0, 0, 40, 40)];
     [self addSubview:self.avatarImageView];
 }
 
@@ -59,29 +59,21 @@
         self.handleInfoLabel.hidden = YES;
     }
 
-    __block ContactDataMember *sourceMember;
-    __weak typeof(self)wself = self;
-    NSString *sourceID = self.notification.sourceID;
-    [[NTESContactsManager sharedInstance] queryContactByUsrId:self.notification.sourceID completion:^(ContactDataMember *member) {
-        if ([sourceID isEqualToString:wself.notification.sourceID]) {
-            //说明cell没有被复用成其他的，这个是可以刷新的
-            sourceMember = member;
-            [wself updateSourceMember:sourceMember];
-        }
 
-    }];
-    if (!sourceMember) {
-        //说明是做请求了，先用一把本地的，等请求回来了再刷一遍
-        sourceMember = [[NTESContactsManager sharedInstance] localContactByUsrId:self.notification.sourceID];
-        [self updateSourceMember:sourceMember];
-    }
+    NSString *sourceID = self.notification.sourceID;
+    NIMKitInfo *sourceMember = [[NIMKit sharedKit] infoByUser:sourceID];
+    [self updateSourceMember:sourceMember];
 }
 
-- (void)updateSourceMember:(ContactDataMember *)sourceMember{
+- (void)updateSourceMember:(NIMKitInfo *)sourceMember{
     NIMSystemNotificationType type = self.notification.type;
-    NSString *avatar = [sourceMember iconId] ? : @"DefaultAvatar";
-    self.avatarImageView.image = [UIImage imageNamed:avatar];
-    self.textLabel.text        = sourceMember.nick.length ? sourceMember.nick : sourceMember.usrId;
+    NSString *avatarUrlString = sourceMember.avatarUrlString;
+    NSURL *url;
+    if (avatarUrlString.length) {
+        url = [NSURL URLWithString:avatarUrlString];
+    }
+    [self.avatarImageView nim_setImageWithURL:url placeholderImage:sourceMember.avatarImage];
+    self.textLabel.text        = sourceMember.showName;
     [self.textLabel sizeToFit];
     switch (type) {
         case NIMSystemNotificationTypeTeamApply:
@@ -174,7 +166,7 @@
     
 }
 
-#define MaxTextLabelWidth 180.0 * UISreenWidthScale
+#define MaxTextLabelWidth 120.0 * UISreenWidthScale
 #define MaxDetailLabelWidth 160.0 * UISreenWidthScale
 #define MaxMessageLabelWidth 150.0 * UISreenWidthScale
 #define TextLabelAndMessageLabelSpacing 20.f

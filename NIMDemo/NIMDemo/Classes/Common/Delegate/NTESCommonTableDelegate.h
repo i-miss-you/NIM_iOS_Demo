@@ -12,4 +12,6 @@
 
 - (instancetype) initWithTableData:(NSArray *(^)(void))data;
 
+@property (nonatomic,assign) CGFloat defaultSeparatorLeftEdge;
+
 @end

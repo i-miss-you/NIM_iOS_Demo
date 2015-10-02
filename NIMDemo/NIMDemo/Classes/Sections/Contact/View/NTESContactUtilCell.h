@@ -15,8 +15,10 @@
 
 @end
 
-@interface NTESContactUtilCell : UITableViewCell<NTESContactCell>
+@interface NTESContactUtilCell : UITableViewCell
 
 @property (nonatomic,weak) id<NTESContactUtilCellDelegate> delegate;
+
+- (void)refreshWithContactItem:(id<NTESContactItem>)item;
 
 @end

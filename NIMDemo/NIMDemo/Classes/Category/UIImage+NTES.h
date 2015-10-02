@@ -14,4 +14,6 @@
 
 + (UIImage *)fetchChartlet:(NSString *)imageName chartletId:(NSString *)chartletId;
 
+- (UIImage *)imageForAvatarUpload;
+
 @end

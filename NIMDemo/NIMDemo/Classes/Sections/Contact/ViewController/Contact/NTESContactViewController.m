@@ -7,29 +7,29 @@
 //
 
 #import "NTESContactViewController.h"
-#import "NIMSDK.h"
 #import "NTESSessionUtil.h"
 #import "NTESSessionViewController.h"
-#import "NTESContactDataItem.h"
 #import "NTESContactUtilItem.h"
 #import "NTESContactDefines.h"
 #import "NTESGroupedContacts.h"
-#import "NTESContactsManager.h"
 #import "UIView+Toast.h"
 #import "NTESCustomNotificationDB.h"
 #import "NTESNotificationCenter.h"
 #import "UIActionSheet+NTESBlock.h"
-#import "NTESCreateNormalTeamCardViewController.h"
-#import "NTESCreateRegularTeamCardViewController.h"
 #import "NTESSearchTeamViewController.h"
 #import "NTESContactAddFriendViewController.h"
-#import "NTESPersonCardViewController.h"
+#import "NTESPersonalCardViewController.h"
 #import "UIAlertView+NTESBlock.h"
 #import "SVProgressHUD.h"
+#import "NTESContactUtilCell.h"
+#import "NIMContactDataCell.h"
+#import "NIMContactSelectViewController.h"
 
 @interface NTESContactViewController ()
-<NTESGroupedContactsDelegate,
+<
 NIMSystemNotificationManagerDelegate,
+NTESContactUtilCellDelegate,
+NIMContactDataCellDelegate,
 NIMLoginManagerDelegate,
 NIMUserManagerDelegate
 > {
@@ -85,14 +85,13 @@ NIMUserManagerDelegate
 
 - (void)prepareData{
     _contacts = [[NTESGroupedContacts alloc] init];
-    _contacts.delegate = self;
-    _contacts.dataSource = [NTESContactsManager sharedInstance];
 
     NSString *contactCellUtilIcon   = @"icon";
     NSString *contactCellUtilVC     = @"vc";
     NSString *contactCellUtilBadge  = @"badge";
     NSString *contactCellUtilTitle  = @"title";
     NSString *contactCellUtilUid    = @"uid";
+    NSString *contactCellUtilSelectorName = @"selName";
 //原始数据
     
     NSInteger systemCount = [[[NIMSDK sharedSDK] systemNotificationManager] allUnreadCount];
@@ -122,7 +121,7 @@ NIMUserManagerDelegate
               @{
                   contactCellUtilIcon:@"icon_computer_normal",
                   contactCellUtilTitle:@"我的电脑",
-                  contactCellUtilUid:[NIMSDK sharedSDK].loginManager.currentAccount
+                  contactCellUtilSelectorName:@"onEnterMyComputer"
                 },
               ] mutableCopy];
     
@@ -135,10 +134,11 @@ NIMUserManagerDelegate
     for (NSDictionary *item in utils) {
         NTESContactUtilMember *utilItem = [[NTESContactUtilMember alloc] init];
         utilItem.nick              = item[contactCellUtilTitle];
-        utilItem.iconId            = item[contactCellUtilIcon];
+        utilItem.icon              = [UIImage imageNamed:item[contactCellUtilIcon]];
         utilItem.vcName            = item[contactCellUtilVC];
         utilItem.badge             = [item[contactCellUtilBadge] stringValue];
-        utilItem.usrId             = item[contactCellUtilUid];
+        utilItem.userId            = item[contactCellUtilUid];
+        utilItem.selName           = item[contactCellUtilSelectorName];
         [members addObject:utilItem];
     }
     contactUtil.members = members;
@@ -148,21 +148,68 @@ NIMUserManagerDelegate
 
 
 #pragma mark - Action
+- (void)onEnterMyComputer{
+    NSString *uid = [[NIMSDK sharedSDK].loginManager currentAccount];
+    NIMSession *session = [NIMSession session:uid type:NIMSessionTypeP2P];
+    NTESSessionViewController *vc = [[NTESSessionViewController alloc] initWithSession:session];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
 - (void)onOpera:(id)sender{
     UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:@"取消" destructiveButtonTitle:nil otherButtonTitles:@"添加好友",@"创建高级群",@"创建普通群",@"搜索高级群", nil];
     __weak typeof(self) wself = self;
+    NSString *currentUserId = [[NIMSDK sharedSDK].loginManager currentAccount];
     [sheet showInView:self.view completionHandler:^(NSInteger index) {
         UIViewController *vc;
         switch (index) {
             case 0:
                 vc = [[NTESContactAddFriendViewController alloc] initWithNibName:nil bundle:nil];
                 break;
-            case 1:  //创建高级群
-                vc = [[NTESCreateRegularTeamCardViewController alloc] initWithNibName:nil bundle:nil];
+            case 1:{  //创建高级群
+                [wself presentMemberSelector:^(NSArray *uids) {
+                    NSArray *members = [@[currentUserId] arrayByAddingObjectsFromArray:uids];
+                    NIMCreateTeamOption *option = [[NIMCreateTeamOption alloc] init];
+                    option.name       = @"高级群";
+                    option.type       = NIMTeamTypeAdvanced;
+                    option.joinMode   = NIMTeamJoinModeNeedAuth;
+                    option.postscript = @"邀请你加入群组";
+                    [SVProgressHUD show];
+                    [[NIMSDK sharedSDK].teamManager createTeam:option users:members completion:^(NSError *error, NSString *teamId) {
+                        [SVProgressHUD dismiss];
+                        if (!error) {
+                            NIMSession *session = [NIMSession session:teamId type:NIMSessionTypeTeam];
+                            NTESSessionViewController *vc = [[NTESSessionViewController alloc] initWithSession:session];
+                            [wself.navigationController pushViewController:vc animated:YES];
+                        }else{
+                            [wself.view makeToast:@"创建失败" duration:2.0 position:CSToastPositionCenter];
+                        }
+                    }];
+                }];
                 break;
-            case 2: //创建普通群
-                vc = [[NTESCreateNormalTeamCardViewController alloc] initWithNibName:nil bundle:nil];
+            }
+            case 2:{ //创建普通群
+                [wself presentMemberSelector:^(NSArray *uids) {
+                    if (!uids.count) {
+                        return; //普通群必须除自己外必须要有一个群成员
+                    }
+                    NSArray *members = [@[currentUserId] arrayByAddingObjectsFromArray:uids];
+                    NIMCreateTeamOption *option = [[NIMCreateTeamOption alloc] init];
+                    option.name       = @"普通群";
+                    option.type       = NIMTeamTypeNormal;
+                    [SVProgressHUD show];
+                    [[NIMSDK sharedSDK].teamManager createTeam:option users:members completion:^(NSError *error, NSString *teamId) {
+                        [SVProgressHUD dismiss];
+                        if (!error) {
+                            NIMSession *session = [NIMSession session:teamId type:NIMSessionTypeTeam];
+                            NTESSessionViewController *vc = [[NTESSessionViewController alloc] initWithSession:session];
+                            [wself.navigationController pushViewController:vc animated:YES];
+                        }else{
+                            [wself.view makeToast:@"创建失败" duration:2.0 position:CSToastPositionCenter];
+                        }
+                    }];
+                }];
                 break;
+            }
             case 3:
                 vc = [[NTESSearchTeamViewController alloc] initWithNibName:nil bundle:nil];
                 break;
@@ -175,27 +222,22 @@ NIMUserManagerDelegate
     }];
 }
 
-#pragma mark - GroupedContactsDelegate
-
-- (void)didFinishedContactsUpdate {
-    [_refreshControl endRefreshing];
-    [self prepareData];
-    [_tableView reloadData];
-}
 
 #pragma mark - UITableViewDelegate
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     id<NTESContactItem> contactItem = (id<NTESContactItem>)[_contacts memberOfIndex:indexPath];
-    if (contactItem.vcName.length) {
+    if ([contactItem respondsToSelector:@selector(selName)] && [contactItem selName].length) {
+        SEL sel = NSSelectorFromString([contactItem selName]);
+        SuppressPerformSelectorLeakWarning([self performSelector:sel withObject:nil]);
+    }
+    else if (contactItem.vcName.length) {
         Class clazz = NSClassFromString(contactItem.vcName);
         UIViewController * vc = [[clazz alloc] initWithNibName:nil bundle:nil];
         [self.navigationController pushViewController:vc animated:YES];
-    }else if([contactItem respondsToSelector:@selector(usrId)]){
-        NSString * friendId   = contactItem.usrId;
-        NIMSession * session  = [NIMSession session:friendId type:NIMSessionTypeP2P];
-        NTESSessionViewController * vc = [[NTESSessionViewController alloc] initWithSession:session];
-        [self.navigationController pushViewController:vc animated:YES];
+    }else if([contactItem respondsToSelector:@selector(userId)]){
+        NSString * friendId   = contactItem.userId;
+        [self enterPersonalCard:friendId];
     }
 
 }
@@ -217,21 +259,25 @@ NIMUserManagerDelegate
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
-    id<NTESContactItem> contactItem = (id<NTESContactItem>)[_contacts memberOfIndex:indexPath];
-    NSString * cellId = contactItem.reuseId;
+    id contactItem = [_contacts memberOfIndex:indexPath];
+    NSString * cellId = [contactItem reuseId];
     UITableViewCell * cell = [tableView dequeueReusableCellWithIdentifier:cellId];
     if (!cell) {
-        Class cellClazz = NSClassFromString(contactItem.cellName);
+        Class cellClazz = NSClassFromString([contactItem cellName]);
         cell = [[cellClazz alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellId];
     }
-    if (contactItem.showAccessoryView) {
+    if ([contactItem showAccessoryView]) {
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     }else{
         cell.accessoryType = UITableViewCellAccessoryNone;
     }
-    id<NTESContactCell> myCell = (id<NTESContactCell>)cell;
-    [myCell refreshWithContactItem:contactItem];
-    [myCell addDelegate:self];
+    if ([cell isKindOfClass:[NTESContactUtilCell class]]) {
+        [(NTESContactUtilCell *)cell refreshWithContactItem:contactItem];
+        [(NTESContactUtilCell *)cell setDelegate:self];
+    }else{
+        [(NIMContactDataCell *)cell refreshUser:contactItem];
+        [(NIMContactDataCell *)cell setDelegate:self];
+    }
     return cell;
 }
 
@@ -249,7 +295,7 @@ NIMUserManagerDelegate
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     id<NTESContactItem> contactItem = (id<NTESContactItem>)[_contacts memberOfIndex:indexPath];
-    return [contactItem usrId].length;
+    return [contactItem userId].length;
 }
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath{
@@ -259,7 +305,7 @@ NIMUserManagerDelegate
             if (index == 1) {
                 [SVProgressHUD show];
                 id<NTESContactItem,NTESGroupMemberProtocol> contactItem = (id<NTESContactItem,NTESGroupMemberProtocol>)[_contacts memberOfIndex:indexPath];
-                NSString *userId = [contactItem usrId];
+                NSString *userId = [contactItem userId];
                 __weak typeof(self) wself = self;
                 [[NIMSDK sharedSDK].userManager deleteFriend:userId completion:^(NSError *error) {
                     [SVProgressHUD dismiss];
@@ -280,15 +326,19 @@ NIMUserManagerDelegate
     [self.tableView reloadData];
 }
 
-#pragma mark - NTESContactDataCellDelegate
-- (void)onPressUserAvatar:(NSString *)uid{
-    NTESPersonCardViewController *vc = [[NTESPersonCardViewController alloc] initWithUserId:uid];
-    [self.navigationController pushViewController:vc animated:YES];
+#pragma mark - NIMContactDataCellDelegate
+- (void)onPressAvatar:(NSString *)memberId{
+    [self enterPersonalCard:memberId];
 }
 
 #pragma mark - NTESContactUtilCellDelegate
 - (void)onPressUtilImage:(NSString *)content{
     [self.view makeToast:[NSString stringWithFormat:@"点我干嘛 我是<%@>",content] duration:2.0 position:CSToastPositionCenter];
+}
+
+#pragma mark - NIMContactSelectDelegate
+- (void)didFinishedSelect:(NSArray *)selectedContacts{
+    
 }
 
 #pragma mark - NIMSDK Delegate
@@ -308,16 +358,43 @@ NIMUserManagerDelegate
 
 - (void)onFriendChanged:(NIMUser *)user
 {
-    __weak typeof(self) wself = self;
-    [[NTESContactsManager sharedInstance] queryContactByUsrId:user.userId completion:^(ContactDataMember *member) {
-        [wself prepareData];
-        [wself.tableView reloadData];
-    }];
+    [self prepareData];
+    [self.tableView reloadData];
 }
 
 - (void)onBlackListChanged{
     [self prepareData];
     [self.tableView reloadData];
+}
+
+- (void)onUserInfoChanged:(NIMUser *)user{
+    [self prepareData];
+    [self.tableView reloadData];
+}
+
+#pragma mark - Private
+- (void)enterPersonalCard:(NSString *)userId{
+    NTESPersonalCardViewController *vc = [[NTESPersonalCardViewController alloc] initWithUserId:userId];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
+
+- (void)presentMemberSelector:(ContactSelectFinishBlock) block{
+    NSMutableArray *users = [[NSMutableArray alloc] init];
+    //使用内置的好友选择器
+    NIMContactFriendSelectConfig *config = [[NIMContactFriendSelectConfig alloc] init];
+    //获取自己id
+    NSString *currentUserId = [[NIMSDK sharedSDK].loginManager currentAccount];
+    [users addObject:currentUserId];
+    //将自己的id过滤
+    config.filterIds = users;
+    //需要多选
+    config.needMutiSelected = YES;
+    //初始化联系人选择器
+    NIMContactSelectViewController *vc = [[NIMContactSelectViewController alloc] initWithConfig:config];
+    //回调处理
+    vc.finshBlock = block;
+    [vc show];
 }
 
 @end

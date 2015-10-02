@@ -9,7 +9,7 @@
 #import "NTESLogViewController.h"
 #import "NTESLogManager.h"
 
-@interface NTESLogViewController ()
+@interface NTESLogViewController ()<NSLayoutManagerDelegate>
 @property (strong, nonatomic) IBOutlet UITextView *logTextView;
 @property (copy,nonatomic) NSString *path;
 @end
@@ -31,6 +31,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
     self.edgesForExtendedLayout = UIRectEdgeNone;
+    
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"退出" style:UIBarButtonItemStyleDone target:self action:@selector(onDismiss:)];
     NSData *data = [NSData dataWithContentsOfFile:_path];
     NSString *content = [[NSString alloc] initWithData:data
@@ -43,10 +44,13 @@
     _logTextView.text = content;
 }
 
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+- (void)viewDidAppear:(BOOL)animated{
+    [super viewDidAppear:animated];
+    [_logTextView scrollRangeToVisible:NSMakeRange([_logTextView.text length], 0)];
+    [_logTextView setScrollEnabled:NO];
+    [_logTextView setScrollEnabled:YES];
 }
+
 
 - (void)onDismiss:(id)sender {
     [self dismissViewControllerAnimated:YES completion:nil];

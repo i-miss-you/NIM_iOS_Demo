@@ -15,12 +15,12 @@ target 'NIM' do
         pod 'FMDB', '~> 2.5'
         pod 'Reachability', '~> 3.1.1'
         pod 'CocoaLumberjack', '~> 2.0.0-rc2'
-        pod 'NIMSDK', '~> 1.4.0’
+        pod 'NIMSDK', '~> 1.5.0'
         xcodeproj 'NIMDemo/NIM.xcodeproj'
 end
 
 target 'NIMKit' do
-        pod 'NIMSDK', '~> 1.4.0’
+        pod 'NIMSDK', '~> 1.5.0'
         xcodeproj 'NIMKit/NIMKit.xcodeproj'
 end
 

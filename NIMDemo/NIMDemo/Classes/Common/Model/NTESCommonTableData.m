@@ -11,7 +11,6 @@
 #define DefaultUIRowHeight  50.f
 #define DefaultUIHeaderHeight  44.f
 #define DefaultUIFooterHeight  44.f
-#define DefaultUISepEdge       CGFLOAT_MAX
 
 @implementation NTESCommonTableSection
 
@@ -64,7 +63,7 @@
         _cellActionName = dict[CellAction];
         _uiRowHeight    = dict[RowHeight] ? [dict[RowHeight] floatValue] : DefaultUIRowHeight;
         _extraInfo      = dict[ExtraInfo];
-        _sepLeftEdge    = dict[SepLeftEdge] ? [dict[SepLeftEdge] floatValue] : DefaultUISepEdge;
+        _sepLeftEdge    = [dict[SepLeftEdge] floatValue];
         _showAccessory  = [dict[ShowAccessory] boolValue];
         _forbidSelect   = [dict[ForbidSelect] boolValue];
     }

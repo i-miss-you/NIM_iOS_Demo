@@ -35,11 +35,10 @@
     [self.button setTitle:rowData.title forState:UIControlStateNormal];
     ColorButtonCellStyle style = [rowData.extraInfo integerValue];
     self.button.style = style;
+    [self.button removeTarget:tableView.viewController action:NULL forControlEvents:UIControlEventTouchUpInside];
     if (rowData.cellActionName.length) {
         SEL action = NSSelectorFromString(rowData.cellActionName);
         [_button addTarget:tableView.viewController action:action forControlEvents:UIControlEventTouchUpInside];
-    }else{
-        [_button removeTarget:tableView.viewController action:NULL forControlEvents:UIControlEventTouchUpInside];
     }
 }
 

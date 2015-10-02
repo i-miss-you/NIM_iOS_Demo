@@ -7,25 +7,24 @@
 //
 
 #import "NTESDataProvider.h"
-#import "NTESContactsManager.h"
 
 @implementation NTESDataProvider
 
 - (NIMKitInfo *)infoByUser:(NSString *)userId{
-    ContactDataMember *member = [[NTESContactsManager sharedInstance] localContactByUsrId:userId];
-    if (member) {
+    NIMUser *user = [[NIMSDK sharedSDK].userManager userInfo:userId];
+    if (user) {
         //如果本地有数据则直接返回
         NIMKitInfo *info = [[NIMKitInfo alloc] init];
-        info.showName    = member.nick;
-        info.avatarImage = [UIImage imageNamed:member.iconId];
-        info.avatarImage = info.avatarImage?: [UIImage imageNamed:@"DefaultAvatar"];
+        info.infoId      = userId;
+        info.showName    = user.userInfo.nickName.length ? user.userInfo.nickName : userId;
+        info.avatarImage = [UIImage imageNamed:@"DefaultAvatar"];
+        info.avatarUrlString = user.userInfo.thumbAvatarUrl;
         return info;
     }else{
         //如果本地没有数据则去自己的应用服务器请求数据
-        [[NTESContactsManager sharedInstance] queryContactByUsrId:userId completion:^(ContactDataMember *member) {
-            if (member) {
-                //请求成功后调用通知接口刷新
-                [[NIMKit sharedKit] notfiyUserInfoChanged:member.usrId];
+        [[NIMSDK sharedSDK].userManager fetchUserInfos:@[userId] completion:^(NSArray *users, NSError *error) {
+            if (!error) {
+                [[NIMKit sharedKit] notfiyUserInfoChanged:userId];
             }
         }];
         //先返回一个默认数据,以供网络请求没回来的时候界面可以有东西展示
@@ -40,6 +39,7 @@
     NIMTeam *team    = [[NIMSDK sharedSDK].teamManager teamById:teamId];
     NIMKitInfo *info = [[NIMKitInfo alloc] init];
     info.showName    = team.teamName;
+    info.infoId      = teamId;
     info.avatarImage = [UIImage imageNamed:@"avatar_team"];
     return info;
 }

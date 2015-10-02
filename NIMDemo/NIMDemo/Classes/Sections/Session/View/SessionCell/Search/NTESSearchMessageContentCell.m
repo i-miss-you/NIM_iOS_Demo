@@ -8,10 +8,9 @@
 
 #import "NTESSearchMessageContentCell.h"
 #import "NTESSearchLocalHistoryObject.h"
-#import "NTESAvatarImageView.h"
-#import "NTESContactsManager.h"
 #import "NTESSessionUtil.h"
 #import "UIView+NTES.h"
+#import "NIMAvatarImageView.h"
 
 //font
 CGFloat SearchCellTitleFontSize   = 13.f;
@@ -31,7 +30,7 @@ CGFloat SearchCellContentMinHeight      = 15.f; //cell的高度是由文本高�
 
 @interface NTESSearchMessageContentCell()
 
-@property (nonatomic,strong) NTESAvatarImageView *avatar;
+@property (nonatomic,strong) NIMAvatarImageView *avatar;
 
 @property (nonatomic,strong) UILabel *titleLabel;
 
@@ -48,7 +47,7 @@ CGFloat SearchCellContentMinHeight      = 15.f; //cell的高度是由文本高�
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
-        _avatar                     = [NTESAvatarImageView demoInstanceContactDataList];
+        _avatar                     = [[NIMAvatarImageView alloc] initWithFrame:CGRectMake(0, 0, 30, 30)];
         [self addSubview:_avatar];
         _titleLabel                 = [[UILabel alloc] initWithFrame:CGRectZero];
         _titleLabel.font            = [UIFont systemFontOfSize:13.f];
@@ -68,11 +67,13 @@ CGFloat SearchCellContentMinHeight      = 15.f; //cell的高度是由文本高�
 - (void)refresh:(NTESSearchLocalHistoryObject *)object{
     self.object = object;
     NIMMessage *message    = object.message;
-    ContactDataMember *member = [[NTESContactsManager sharedInstance] localContactByUsrId:message.from];
-    self.avatar.image = [UIImage imageNamed:member.iconId];
-    self.avatar.image = self.avatar.image ?: [UIImage imageNamed:@"DefaultAvatar"];
-    
-    self.titleLabel.text   = [NTESSessionUtil showNick:message.from inSession:message.session];
+    NIMKitInfo *info = [[NIMKit sharedKit] infoByUser:message.from];
+    NSURL *avatarURL;
+    if (info.avatarUrlString.length) {
+        avatarURL = [NSURL URLWithString:info.avatarUrlString];
+    }
+    [self.avatar nim_setImageWithURL:avatarURL placeholderImage:info.avatarImage];
+    self.titleLabel.text   = info.showName;
     self.contentLabel.text = message.text;
     self.timeLabel.text    = [NTESSessionUtil showTime:message.timestamp showDetail:YES];
     [self.titleLabel sizeToFit];

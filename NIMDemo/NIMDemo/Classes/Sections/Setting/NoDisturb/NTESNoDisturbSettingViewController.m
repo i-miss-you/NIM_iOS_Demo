@@ -10,7 +10,7 @@
 #import "NTESCommonTableData.h"
 #import "UIView+Toast.h"
 #import "NTESCommonTableDelegate.h"
-#import "NTESTimePickerView.h"
+#import "NIMTimePickerView.h"
 #import "UIView+Toast.h"
 
 @interface NTESNoDisturbSettingViewController ()
@@ -65,7 +65,6 @@
                                       CellClass    : @"NTESSettingSwitcherCell",
                                       CellAction   : @"onActionNoDisturbingSettingValueChange:",
                                       ExtraInfo    : @(enableNoDisturbing),
-                                      SepLeftEdge  : enableNoDisturbing?@(SepLineLeft):@(UIScreenWidth),
                                       ForbidSelect : @(YES)
                                       },
                                   @{
@@ -74,7 +73,6 @@
                                       CellClass   : @"NTESNoDisturbTimeCell",
                                       CellAction  : @"onActionSetNoDisturbingStart:",
                                       Disable     : @(!enableNoDisturbing),
-                                      SepLeftEdge : @(SepLineLeft)
                                       },
                                   @{
                                       Title      :@"至",
@@ -106,27 +104,32 @@
 
 
 - (void)onActionSetNoDisturbingStart:(id)sender{
-    NTESTimePickerView *pickerView = [[NTESTimePickerView alloc] initWithFrame:CGRectZero];
+    NIMTimePickerView *pickerView = [[NIMTimePickerView alloc] initWithFrame:self.view.bounds];
     NIMPushNotificationSetting *setting = [[NIMSDK sharedSDK].apnsManager currentSetting];
     [pickerView refreshWithHour:setting.noDisturbingStartH minute:setting.noDisturbingStartM];
     __weak typeof(self) wself = self;
     [pickerView showInView:self.view.window onCompletion:^(NSInteger hour, NSInteger minute) {
         NIMPushNotificationSetting *setting = [[NIMSDK sharedSDK].apnsManager currentSetting];
-        setting.noDisturbingStartH = hour;
-        setting.noDisturbingStartM = minute;
-        [wself updateAPNSSetting:setting];
+        if (hour == setting.noDisturbingEndH && minute == setting.noDisturbingEndM) {
+            [wself.view makeToast:@"结束时间不能与开始时间一致" duration:2.0 position:CSToastPositionCenter];
+            [wself refreshData];
+        }else{
+            setting.noDisturbingStartH = hour;
+            setting.noDisturbingStartM = minute;
+            [wself updateAPNSSetting:setting];
+        }
     }];
 }
 
 - (void)onActionSetNoDisturbingEnd:(id)sender{
-    NTESTimePickerView *pickerView = [[NTESTimePickerView alloc] initWithFrame:CGRectZero];
+    NIMTimePickerView *pickerView = [[NIMTimePickerView alloc] initWithFrame:self.view.bounds];
     NIMPushNotificationSetting *setting = [[NIMSDK sharedSDK].apnsManager currentSetting];
     [pickerView refreshWithHour:setting.noDisturbingEndH minute:setting.noDisturbingEndM];
     __weak typeof(self) wself = self;
     [pickerView showInView:self.view.window onCompletion:^(NSInteger hour, NSInteger minute) {
         NIMPushNotificationSetting *setting = [[NIMSDK sharedSDK].apnsManager currentSetting];
         if (hour == setting.noDisturbingStartH && minute == setting.noDisturbingStartM) {
-            [wself.view makeToast:@"结束时间不能与开始时间一致"];
+            [wself.view makeToast:@"结束时间不能与开始时间一致" duration:2.0 position:CSToastPositionCenter];
             [wself refreshData];
         }else{
             setting.noDisturbingEndH = hour;

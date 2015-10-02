@@ -26,6 +26,10 @@
 
 @implementation NTESContactUtilMember
 
+- (NSString *)avatarUrl{
+    return nil;
+}
+
 - (CGFloat)uiHeight{
     return NTESContactUtilRowHeight;
 }
@@ -43,7 +47,7 @@
 }
 
 - (NSString *)memberId{
-    return self.usrId;
+    return self.userId;
 }
 
 - (BOOL)showAccessoryView{

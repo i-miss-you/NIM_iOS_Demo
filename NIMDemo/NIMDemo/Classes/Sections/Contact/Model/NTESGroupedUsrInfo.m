@@ -7,7 +7,7 @@
 //
 
 #import "NTESGroupedUsrInfo.h"
-#import "NTESTeamInfoData.h"
+#import "NIMTeamInfoData.h"
 @implementation NTESGroupedUsrInfo
 
 - (instancetype)init
@@ -57,7 +57,7 @@
     if(self) {
         NSMutableArray *array = [[NSMutableArray alloc] init];
         for (NIMTeam *team in teams) {
-            NTESTeamInfoData *teamInfo = [[NTESTeamInfoData alloc] initWithTeam:team];
+            NIMTeamInfoData *teamInfo = [[NIMTeamInfoData alloc] initWithTeam:team];
             [array addObject:teamInfo];
         }
         self.members = array;

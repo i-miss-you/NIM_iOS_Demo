@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-@class NTESAvatarImageView;
+@class NIMAvatarImageView;
 @class ContactDataMember;
 
 
@@ -20,7 +20,7 @@
 
 @interface NTESUserListCell : UITableViewCell
 
-@property (nonatomic,strong) NTESAvatarImageView * avatarImageView;
+@property (nonatomic,strong) NIMAvatarImageView * avatarImageView;
 
 @property (nonatomic,weak) id<NTESUserListCellDelegate> delegate;
 

@@ -130,7 +130,7 @@ typedef NS_ENUM(NSInteger, CustomNotificationStatus){
 }
 
 
-- (void)markAllNotificationAsRead{
+- (void)markAllNotificationsAsRead{
     NSString *sql = @"update notifications set status  = ? where status = ?";
     io_sync_safe(^{
         if (![self.db executeUpdate:sql,@(CustomNotificationStatusRead),@(CustomNotificationStatusNone)])

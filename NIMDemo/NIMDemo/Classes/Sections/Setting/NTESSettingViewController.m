@@ -8,7 +8,6 @@
 
 #import "NTESSettingViewController.h"
 #import "NTESCommonTableData.h"
-#import "NTESContactsManager.h"
 #import "NTESCommonTableDelegate.h"
 #import "SVProgressHUD.h"
 #import "UIView+Toast.h"
@@ -23,10 +22,10 @@
 #import "NTESLogManager.h"
 #import "NTESColorButtonCell.h"
 #import "NTESAboutViewController.h"
-#import "NTESNickNameSettingViewController.h"
+#import "NTESUserInfoSettingViewController.h"
 #import "NTESBlackListViewController.h"
 
-@interface NTESSettingViewController ()
+@interface NTESSettingViewController ()<NIMUserManagerDelegate>
 
 @property (nonatomic,strong) NSArray *data;
 
@@ -61,6 +60,7 @@
     extern NSString *NTESCustomNotificationCountChanged;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onCustomNotifyChanged:) name:NTESCustomNotificationCountChanged object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onInfoUpdate:) name:NIMKitUserInfoHasUpdatedNotification object:nil];
+    [[NIMSDK sharedSDK].userManager addDelegate:self];
 
 }
 
@@ -83,15 +83,17 @@
     NSInteger customNotifyCount = [[NTESCustomNotificationDB sharedInstance] unreadCount];
     NSString *customNotifyText  = [NSString stringWithFormat:@"自定义系统通知 (%zd)",customNotifyCount];
 
-    ContactDataMember *me = [[NTESContactsManager sharedInstance] me];
+    NSString *uid = [[NIMSDK sharedSDK].loginManager currentAccount];
     NSArray *data = @[
                       @{
                           HeaderTitle:@"",
                           RowContent :@[
                                         @{
-                                            ExtraInfo     : me ? me : [NSNull null],
+                                            ExtraInfo     : uid.length ? uid : [NSNull null],
                                             CellClass     : @"NTESSettingPortraitCell",
                                             RowHeight     : @(100),
+                                            CellAction    : @"onActionTouchPortrait:",
+                                            ShowAccessory : @(YES)
                                          },
                                        ],
                           FooterTitle:@""
@@ -124,17 +126,14 @@
                                         @{
                                           Title      :@"查看日志",
                                           CellAction :@"onTouchShowLog:",
-                                          SepLeftEdge:@(SepLineLeft)
                                           },
                                         @{
                                           Title      :@"清空所有聊天记录",
                                           CellAction :@"onTouchCleanAllChatRecord:",
-                                          SepLeftEdge:@(SepLineLeft)
                                          },
                                         @{
                                             Title      :customNotifyText,
                                             CellAction :@"onTouchCustomNotify:",
-                                            SepLeftEdge:@(SepLineLeft)
                                           },
                                         @{
                                             Title      :@"关于",
@@ -168,6 +167,11 @@
 
 #pragma mark - Action
 
+- (void)onActionTouchPortrait:(id)sender{
+    NTESUserInfoSettingViewController *vc = [[NTESUserInfoSettingViewController alloc] initWithNibName:nil bundle:nil];
+    [self.navigationController pushViewController:vc animated:YES];
+}
+
 - (void)onActionNoDisturbingSetting:(id)sender {
     NTESNoDisturbSettingViewController *vc = [[NTESNoDisturbSettingViewController alloc] initWithNibName:nil bundle:nil];
     __weak typeof(self) wself = self;
@@ -178,7 +182,7 @@
 }
 
 - (void)onTouchShowLog:(id)sender{
-    UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:nil cancelButtonTitle:@"取消" destructiveButtonTitle:nil otherButtonTitles:@"查看SDK日志",@"查看Demo日志", nil];
+    UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:@"查看日志" delegate:nil cancelButtonTitle:@"取消" destructiveButtonTitle:nil otherButtonTitles:@"查看SDK日志",@"查看Demo日志", nil];
     [actionSheet showInView:self.view completionHandler:^(NSInteger index) {
         switch (index) {
             case 0:
@@ -236,6 +240,12 @@
     }];
 }
 
+#pragma mark - NIMUserManagerDelegate
+- (void)onUserInfoChanged:(NIMUser *)user{
+    if ([user.userId isEqualToString:[[NIMSDK sharedSDK].loginManager currentAccount]]) {
+        [self.tableView reloadData];
+    }
+}
 
 #pragma mark - Notification
 - (void)onCustomNotifyChanged:(NSNotification *)notification

@@ -72,22 +72,6 @@
 
 
 
-
-#pragma mark - Remote Layout Config
-
-@interface NTESRemoteSessionAudioLayoutConfig : NIMCellLayoutDefaultConfig
-
-@end
-
-@implementation NTESRemoteSessionAudioLayoutConfig
-
-- (BOOL)shouldShowAudioPlayedStatusIcon:(NIMMessageModel *)model{
-    return NO;
-}
-
-@end
-
-
 #pragma mark - Remote Session Config
 @interface NTESRemoteSessionConfig()
 
@@ -114,22 +98,13 @@
     return self.provider;
 }
 
-
-- (id<NIMCellLayoutConfig>)layoutConfigWithMessage:(NIMMessage *)message{
-    switch (message.messageType) {
-        case NIMMessageTypeAudio:{
-                return [[NTESRemoteSessionAudioLayoutConfig alloc] init];
-                break;
-        }
-        default:
-            break;
-    }
-    return [super layoutConfigWithMessage:message];
+- (BOOL)disableAudioPlayedStatusIcon{
+    return YES;
 }
 
 - (BOOL)disableInputView{
     return YES;
-}
+} 
 
 @end
 

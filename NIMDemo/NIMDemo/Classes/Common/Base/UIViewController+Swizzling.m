@@ -9,12 +9,17 @@
 #import "UIViewController+Swizzling.h"
 #import "SVProgressHUD.H"
 #import "SwizzlingDefine.h"
+#import "UIResponder+NTESFirstResponder.h"
+#import "UIView+NTES.h"
+
 @implementation UIViewController (Swizzling)
 
 + (void)load{
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         swizzling_exchangeMethod([UIViewController class] ,@selector(viewWillAppear:), @selector(swizzling_viewWillAppear:));
+        swizzling_exchangeMethod([UIViewController class] ,@selector(viewDidAppear:), @selector(swizzling_viewDidAppear:));
+        swizzling_exchangeMethod([UIViewController class] ,@selector(viewWillDisappear:), @selector(swizzling_viewWillDisappear:));
         swizzling_exchangeMethod([UIViewController class] ,@selector(viewDidLoad),    @selector(swizzling_viewDidLoad));
         swizzling_exchangeMethod([UIViewController class], @selector(initWithNibName:bundle:), @selector(swizzling_initWithNibName:bundle:));
     });
@@ -42,11 +47,35 @@
 
 
 #pragma mark - ViewWillAppear
+static char UIFirstResponderViewAddress;
+
 - (void)swizzling_viewWillAppear:(BOOL)animated{
     [self swizzling_viewWillAppear:animated];
     DDLogDebug(@"%@ will appear",self);
 }
 
+#pragma mark - ViewWillDisappear
+
+- (void)swizzling_viewWillDisappear:(BOOL)animated{
+    [self swizzling_viewWillDisappear:animated];
+    DDLogDebug(@"%@ will disappear",self);
+    UIView *view = (UIView *)[UIResponder currentFirstResponder];
+    if ([view isKindOfClass:[UIView class]] && view.viewController == self) {
+        objc_setAssociatedObject(self, &UIFirstResponderViewAddress, view, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [view resignFirstResponder];
+    }else{
+        objc_setAssociatedObject(self, &UIFirstResponderViewAddress, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+
+}
+
+
+#pragma mark - ViewDidAppear
+- (void)swizzling_viewDidAppear:(BOOL)animated{
+    [self swizzling_viewDidAppear:animated];
+    UIView *view = objc_getAssociatedObject(self, &UIFirstResponderViewAddress);
+    [view becomeFirstResponder];
+}
 
 
 @end

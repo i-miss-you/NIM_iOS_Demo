@@ -15,9 +15,10 @@
 - (instancetype) initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
-        _textField           = [[UITextField alloc] initWithFrame:CGRectZero];
-        _textField.font      = [UIFont systemFontOfSize:17.f];
-        _textField.textColor = UIColorFromRGB(0x333333);
+        _textField                 = [[UITextField alloc] initWithFrame:CGRectZero];
+        _textField.clearButtonMode = UITextFieldViewModeAlways;
+        _textField.font            = [UIFont systemFontOfSize:17.f];
+        _textField.textColor       = UIColorFromRGB(0x333333);
         [self addSubview:_textField];
     }
     return self;

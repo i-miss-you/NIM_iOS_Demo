@@ -9,10 +9,9 @@
 #import "NTESContactAddFriendViewController.h"
 #import "NTESCommonTableDelegate.h"
 #import "NTESCommonTableData.h"
-#import "NTESContactsManager.h"
 #import "UIView+Toast.h"
 #import "SVProgressHUD.h"
-#import "NTESPersonCardViewController.h"
+#import "NTESPersonalCardViewController.h"
 
 @interface NTESContactAddFriendViewController ()
 
@@ -89,17 +88,19 @@
 #pragma mark - Private
 - (void)addFriend:(NSString *)userId{
     __weak typeof(self) wself = self;
-    [[NTESContactsManager sharedInstance] queryContactByUsrId:userId completion:^(ContactDataMember *member) {
-        if (member) {
-            NTESPersonCardViewController *vc = [[NTESPersonCardViewController alloc] initWithUserId:userId];
+    [SVProgressHUD show];
+    [[NIMSDK sharedSDK].userManager fetchUserInfos:@[userId] completion:^(NSArray *users, NSError *error) {
+        [SVProgressHUD dismiss];
+        if (users.count) {
+            NTESPersonalCardViewController *vc = [[NTESPersonalCardViewController alloc] initWithUserId:userId];
             [wself.navigationController pushViewController:vc animated:YES];
-        }
-        else{
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"该用户不存在" message:@"请检查你输入的帐号是否正确" delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil, nil];
-            [alert show];
+        }else{
+            if (wself) {
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"该用户不存在" message:@"请检查你输入的帐号是否正确" delegate:nil cancelButtonTitle:@"确定" otherButtonTitles:nil, nil];
+                [alert show];
+            }
         }
     }];
-
 }
 
 

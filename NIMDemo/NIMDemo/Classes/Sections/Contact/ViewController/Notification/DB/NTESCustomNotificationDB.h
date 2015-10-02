@@ -23,6 +23,6 @@
 
 - (void)deleteAllNotification;
 
-- (void)markAllNotificationAsRead;
+- (void)markAllNotificationsAsRead;
 
 @end

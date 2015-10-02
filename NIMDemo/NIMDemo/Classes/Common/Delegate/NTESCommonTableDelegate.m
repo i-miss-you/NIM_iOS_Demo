@@ -27,7 +27,8 @@ static NSString *DefaultTableCell = @"UITableViewCell";
 - (instancetype) initWithTableData:(NSArray *(^)(void))data{
     self = [super init];
     if (self) {
-        self.NTESDataReceiver = data;
+        _NTESDataReceiver = data;
+        _defaultSeparatorLeftEdge = SepLineLeft;
     }
     return self;
 }
@@ -101,10 +102,20 @@ static NSString *DefaultTableCell = @"UITableViewCell";
     NTESCommonTableRow     *tableRow     = tableSection.rows[indexPath.row];
     UIView *sep = [cell viewWithTag:SepViewTag];
     CGFloat sepHeight = .5f;
-    CGFloat sepWidth  = cell.width - tableRow.sepLeftEdge;
+    CGFloat sepWidth;
+    if (tableRow.sepLeftEdge) {
+        sepWidth  = cell.width - tableRow.sepLeftEdge;
+    }else{
+        NTESCommonTableSection *section = self.data[indexPath.section];
+        if (indexPath.row == section.rows.count - 1) {
+            //最后一行
+            sepWidth = 0;
+        }else{
+            sepWidth = cell.width - self.defaultSeparatorLeftEdge;
+        }
+    }
     sepWidth  = sepWidth > 0 ? sepWidth : 0;
     sep.frame = CGRectMake(cell.width - sepWidth, cell.height - sepHeight, sepWidth ,sepHeight);
-
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section{

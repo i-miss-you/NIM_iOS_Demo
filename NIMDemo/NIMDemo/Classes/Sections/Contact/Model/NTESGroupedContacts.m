@@ -7,8 +7,7 @@
 //
 
 #import "NTESGroupedContacts.h"
-#import "NTESContactDataItem.h"
-#import "NTESContactsManager.h"
+#import "NTESContactDataMember.h"
 
 @interface NTESGroupedContacts () 
 
@@ -32,45 +31,17 @@
         self.groupMemberComparator = ^NSComparisonResult(NSString *key1, NSString *key2) {
             return [key1 compare:key2];
         };
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onContactsUpdateFnished:) name:NIMKitUserInfoHasUpdatedNotification object:nil];
+        
+        NSMutableArray *contacts = [NSMutableArray array];
+        for (NIMUser *user in [NIMSDK sharedSDK].userManager.myFriends) {
+            NIMKitInfo *info           = [[NIMKit sharedKit] infoByUser:user.userId];
+            NTESContactDataMember *contact = [[NTESContactDataMember alloc] init];
+            contact.info               = info;
+            [contacts addObject:contact];
+        }
+        [self setMembers:contacts];
     }
     return self;
-}
-
-- (instancetype)initWithContacts:(NSArray *)contacts {
-    self = [self init];
-    if(self) {
-        self.members = contacts;
-    }
-    return self;
-}
-
-- (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-- (void)setDataSource:(NTESContactsManager *)dataSource {
-    _dataSource = dataSource;
-    self.members = _dataSource.allMyFriends;
-}
-
-- (void)update {
-    if(_dataSource) [_dataSource update];
-}
-
-- (void)onContactsUpdateFnished:(NSNotification *)note {
-    NSMutableArray *contacts = [NSMutableArray array];
-    for (ContactDataMember *item in _dataSource.allMyFriends) {
-        ContactDataMember *contact = [[ContactDataMember alloc] init];
-        contact.usrId = item.usrId;
-        contact.nick = item.nick;
-        contact.iconId = item.iconId;
-        [contacts addObject:contact];
-    }
-    [self setMembers:contacts];
-    if([_delegate respondsToSelector:@selector(didFinishedContactsUpdate)]) {
-        [_delegate didFinishedContactsUpdate];
-    }
 }
 
 @end

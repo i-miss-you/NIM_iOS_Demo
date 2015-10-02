@@ -7,13 +7,14 @@
 //
 
 #import "NTESUserListCell.h"
-#import "NTESAvatarImageView.h"
-#import "NTESContactDataItem.h"
+#import "NIMAvatarImageView.h"
 #import "UIView+NTES.h"
+#import "NTESContactDataMember.h"
+#import "NTESSessionUtil.h"
 
 @interface NTESUserListCell()
 
-@property (nonatomic,strong) ContactDataMember *member;
+@property (nonatomic,strong) NTESContactDataMember *member;
 
 @property (nonatomic,strong) UIView *sep;
 
@@ -24,7 +25,7 @@
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier{
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
-        _avatarImageView = [NTESAvatarImageView demoInstanceUserList];
+        _avatarImageView = [[NIMAvatarImageView alloc] initWithFrame:CGRectMake(0, 0, 40, 40)];
         [_avatarImageView addTarget:self action:@selector(onTouchAvatar:) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_avatarImageView];
         _sep = [[UIView alloc] initWithFrame:CGRectZero];
@@ -36,18 +37,21 @@
 }
 
 
-- (void)refreshWithMember:(ContactDataMember *)member{
+- (void)refreshWithMember:(NTESContactDataMember *)member{
     self.member = member;
-    self.textLabel.text = member.nick.length ? member.nick : member.usrId;
+    self.textLabel.text = [NTESSessionUtil showNick:member.info.infoId inSession:nil];
     [self.textLabel sizeToFit];
-    NSString *avatar = [member iconId] ? : @"DefaultAvatar";
-    _avatarImageView.image = [UIImage imageNamed:avatar];
+    NSURL *url;
+    if (member.info.avatarUrlString.length) {
+        url = [NSURL URLWithString:member.info.avatarUrlString];
+    }
+    [_avatarImageView nim_setImageWithURL:url placeholderImage:member.info.avatarImage];
 }
 
 
 - (void)onTouchAvatar:(id)sender{
     if ([self.delegate respondsToSelector:@selector(didTouchUserListAvatar:)]) {
-        [self.delegate didTouchUserListAvatar:self.member.usrId];
+        [self.delegate didTouchUserListAvatar:self.member.info.infoId];
     }
 }
 
@@ -63,6 +67,10 @@
 
 - (void)layoutSubviews{
     [super layoutSubviews];
+    
+    static const NSInteger NTESContactAccessoryLeft             = 10;//选择框到左边的距离
+    static const NSInteger NTESContactAvatarAndTitleSpacing     = 20;//头像和文字之间的间距
+
     CGFloat avatarLeft = 15.f;
     self.avatarImageView.left = avatarLeft;
     self.avatarImageView.centerY = self.height * .5f;
